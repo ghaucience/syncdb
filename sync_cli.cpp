@@ -1,92 +1,121 @@
 #include "jansson.h"
-#include "json_parser.h"
 #include "sync.h"
 #include "sync_tcp.h"
 #include "dbm.h"
 #include "base64.h"
 
+#include "json_parser.h"
 
-static int fd = -1;
+
+typedef struct stSyncEnv {
+	int		fd;
+	char	ip[16];
+	int		port;
+	char	dbaddr[128];
+	DBM_Handle	handle;
+}stSyncEnv_t;
+
 static int seq = 0;
-static int db_sync_send(const char *ip, int port, const char *str);
-static int db_sync_get_unsync(stTableSts_t *ts, int count, void **data);
-static json_t *db_sync_base64_code(stTableSts_t *ts, void *data, int len);
-static int db_sync_clr_unsync(stTableSts_t *ts, int count, void *data);
-static int db_sync_wait_resp(const char *ip, int port);
 
-static DBM_Handle handle = NULL;
+static int db_sync_get_unsync(stSyncEnv_t *se, stTableSts_t *ts, int count, void **data);
+static json_t *db_sync_base64_code(stTableSts_t *ts, void *data, int len);
+static int db_sync_req(stSyncEnv_t *se, const char *ip, int port, const char *str);
+static int db_sync_wait_resp(stSyncEnv_t *se, const char *ip, int port);
+static int db_sync_clr_unsync(stSyncEnv_t *se, stTableSts_t *ts, int count, void *data);
 
 static stTableSts_t tss[] = {
-	/*
-	{"House",						sizeof(DBM_House),					1,	1,
-		{"uuid", 0},
+	{"House",						sizeof(DBM_House),					1,	1, {
+			{"uuid", 0},
+		}
 	}, 
 
-	{"ExtHouse",				sizeof(DBM_ExtHouse),				2,	1,
-		{"reluuid", 0},
+	{"ExtHouse",				sizeof(DBM_ExtHouse),				2,	1, {
+			{"reluuid", 0},
+		}
 	},
 
-	{"Person",					sizeof(DBM_Person),					3,	1, 
-		{"uuid", 0},	
+	{"Person",					sizeof(DBM_Person),					3,	1,  {
+			{"uuid", 0},	
+		}
 	},
 
-	{"FlowingPerson",		sizeof(DBM_FlowingPerson),	4,	1,
-		{"reluuid", 0},
+	{"FlowingPerson",		sizeof(DBM_FlowingPerson),	4,	1, {
+			{"reluuid", 0},
+		}
 	},
 
-	{"Device",					sizeof(DBM_Device),					5,	1,
-		{"uuid",	0},
+	{"Device",					sizeof(DBM_Device),					5,	1, {
+			{"uuid",	0},
+		}		
 	},
 
-	{"Card",						sizeof(DBM_Card),						6,	1,
-		{"uuid",	0},
+	{"Card",						sizeof(DBM_Card),						6,	1,{ 
+			{"uuid",	0},
+		}
 	},
 
-	{"SAMCard",					sizeof(DBM_SAMCard),				7,	1,
-		{"type_",			0},
-		{"serial_id", member_offset(DBM_SAMCard, serial_id)},
+	{"SAMCard",					sizeof(DBM_SAMCard),				7,	2, {
+			{"type_",			0},
+			{"serial_id", member_offset(DBM_SAMCard, serial_id)},
+		}
 	},
 
-	{"CardPermission",	sizeof(DBM_CardPermission),	8,	1,
-		{"crk_uuid", 0},
-		{"dev_uuid", member_offset(DBM_CardPermission, dev_uuid)}
+	{"CardPermission",	sizeof(DBM_CardPermission),	8,	2, {
+			{"crk_uuid", 0},
+			{"dev_uuid", member_offset(DBM_CardPermission, dev_uuid)},
+		}
 	},
 
-	{"CardOwning",			sizeof(DBM_CardOwning),			9,	1,
-		{"person_uuid", 0},
-		{"crk_uuid", member_offset(DBM_CardOwning, crk_uuid)}
+	{"CardOwning",			sizeof(DBM_CardOwning),			9,	2, {
+			{"person_uuid", 0},
+			{"crk_uuid", member_offset(DBM_CardOwning, crk_uuid)},
+		}
 	},
 
-	{"UserHouse",				sizeof(DBM_UserHouse),			10,	1,
-		{"userid", 0},
-		{"houseid", member_offset(DBM_UserHouse, houseid)}
+	{"UserHouse",				sizeof(DBM_UserHouse),			10,	2, {
+			{"userid", 0},
+			{"houseid", member_offset(DBM_UserHouse, houseid)},
+		}
 	},
 
-	{"AccessRecrod",		sizeof(DBM_AccessRecord),		11,	1,
-		{"cardno", 0},
-		{"person_uuid", member_offset(DBM_AccessRecord, person_uuid)},
-		{"mac",					member_offset(DBM_AccessRecord, person_uuid)},
-		{"dev_date",		member_offset(DBM_AccessRecord, dev_date)},
+	{"AccessRecrod",		sizeof(DBM_AccessRecord),		11,	4, {
+			{"cardno", 0},
+			{"person_uuid", member_offset(DBM_AccessRecord, person_uuid)},
+			{"mac",					member_offset(DBM_AccessRecord, person_uuid)},
+			{"dev_date",		member_offset(DBM_AccessRecord, dev_date)},
+		}
 	},
 
-	{"DeviceAlarm",			sizeof(DBM_DeviceAlarm),		12, 1,
-		{"uuid", 0},
-		{"mac",					member_offset(DBM_DeviceAlarm, mac)},
-		{"cardno",			member_offset(DBM_DeviceAlarm, cardno)},
-		{"cdate",				member_offset(DBM_DeviceAlarm, cdate)}
+	{"DeviceAlarm",			sizeof(DBM_DeviceAlarm),		12, 4, {
+			{"uuid", 0},
+			{"mac",					member_offset(DBM_DeviceAlarm, mac)},
+			{"cardno",			member_offset(DBM_DeviceAlarm, cardno)},
+			{"cdate",				member_offset(DBM_DeviceAlarm, cdate)}
+		}
 	},
 
-	{"DeviceStatus",		sizeof(DBM_DeviceStatus),		13,	1,
-		{"dev_uuid", 0},
-		{"cdate",		member_offset(DBM_DeviceStatus, cdate)}
+	{"DeviceStatus",		sizeof(DBM_DeviceStatus),		13,	2, {
+			{"dev_uuid", 0},
+			{"cdate",		member_offset(DBM_DeviceStatus, cdate)}
+		}
 	},
-	*/
 };
 
-int db_sync(const char *ip, int port, const char *dbpath) {
-#if 0
+int db_sync_cli(const char *ip, int port, const char *dbaddr) {
+#if 1
 	unsigned int	i				= 0;
 	int ret = -1;
+
+	if (ip == NULL || port < 6000 || dbaddr == NULL) {
+		return -1;
+	}
+
+	stSyncEnv_t se;
+	strcpy(se.ip, ip);
+	strcpy(se.dbaddr,dbaddr);
+	se.port = port;
+	se.handle = NULL;
+	se.fd = -1;
 
 	
 	for (i = 0; i <= sizeof(tss)/sizeof(tss[0]);) {
@@ -95,9 +124,10 @@ int db_sync(const char *ip, int port, const char *dbpath) {
 		void *data = NULL;
 
 
-		ret = db_sync_get_unsync(ts, 10, &data);
+		ret = db_sync_get_unsync(&se, ts, 10, &data);
 		if (ret < 0) {
-			return -1;
+			ret = -1;
+			break;
 		} else if (ret == 0) {
 			i++;
 			continue;
@@ -108,56 +138,69 @@ int db_sync(const char *ip, int port, const char *dbpath) {
 		json_t * jsync = db_sync_base64_code(ts, data, ts->size*count);
 		if (jsync == NULL) {
 			free(data);
-			return -3;
+			ret = -2;
+			break;
 		}
 
 		char *ssync = json_dumps(jsync, 0);
 		if (ssync == NULL) {
 			json_decref(jsync);
 			free(data);
-			return -3;
+			ret = -3;
+			break;
 		}
 
-		ret = db_sync_send(ip, port, ssync);
+		ret = db_sync_req(&se, se.ip, se.port, ssync);
 		free(ssync);
 		json_decref(jsync);
 		if (ret != 0) {
 			free(data);
-			return -4;
+			ret = -4;
+			break;
 		}
 
-		ret = db_sync_wait_resp(ip, port);
+		ret = db_sync_wait_resp(&se, se.ip, se.port);
 		if (ret != 0) {
 			free(data);
-			return -5;
+			ret = -5;
+			break;
 		}
 
-		ret = db_sync_clr_unsync(ts, count, data);
+		ret = db_sync_clr_unsync( &se, ts, count, data);
 		free(data);
 		if (ret != count) {	
-			return -6;
+			ret = -6;
+			break;
 		}
 	}
+
+	if (se.fd > 0) {
+		sync_tcp_destroy(se.fd);
+	}
+	if (se.handle != NULL) {
+		DBM_deinit(se.handle);
+	}
+	
+	return ret;
 #else
 	return 0;
 #endif
-	return 0;
 }
 
-int db_sync_send(const char *ip, int port, const char *str) {
-#if 0
+int db_sync_req(stSyncEnv_t *se, const char *ip, int port, const char *str) {
+#if 1
 
-	if (fd < 0) {
-		fd = sync_tcp_create(TCP_CLIENT, ip, port);	
-		if (fd < 0) {
+	if (se->fd < 0) {
+		se->fd = sync_tcp_create(TCP_CLIENT, ip, port);	
+		if (se->fd < 0) {
 			return -1;
 		}
 	}
 
-	int ret = sync_tcp_send(fd, (char *)str, strlen(str), 0, 80);
+	int ret = sync_tcp_send(se->fd, (char *)str, strlen(str), 0, 80);
 	if (ret <= 0) {
-		sync_tcp_destroy(fd);
-		fd = -1;
+		sync_tcp_destroy(se->fd);
+		se->fd = -1;
 		return -2;
 	}
 
@@ -166,13 +209,14 @@ int db_sync_send(const char *ip, int port, const char *str) {
 	return 0;
 #endif
 }
-static int db_sync_get_unsync(stTableSts_t *ts, int count, void **data) {
-#if 0
+
+static int db_sync_get_unsync(stSyncEnv_t *se, stTableSts_t *ts, int count, void **data) {
+#if 1
 	int ret = -1;
-	if (handle == NULL) {
-		ret = DBM_init(NULL, &handle);
+	if (se->handle == NULL) {
+		ret = DBM_init(se->dbaddr, &se->handle);
 		if (ret != OSA_STATUS_OK) {
-			handle = NULL;
+			se->handle = NULL;
 			return -1;
 		}
 	}
@@ -191,7 +235,7 @@ static int db_sync_get_unsync(stTableSts_t *ts, int count, void **data) {
 		return -2;
 	}
 
-	ret = DBM_getEntitiesCount(handle, &options);
+	ret = DBM_getEntitiesCount(se->handle, &options);
 	if (ret != OSA_STATUS_OK) {
 		free(options.pEntities);
 		return -3;
@@ -211,7 +255,7 @@ static int db_sync_get_unsync(stTableSts_t *ts, int count, void **data) {
 
 
 static json_t *db_sync_base64_code(stTableSts_t *ts, void *data, int len) {
-#if 0
+#if 1
 
 	int blen = Base64encode_len(len);
 	char *buf = (char *)malloc(blen+1);
@@ -237,18 +281,9 @@ static json_t *db_sync_base64_code(stTableSts_t *ts, void *data, int len) {
 
 }
 
-static int db_sync_clr_unsync(stTableSts_t *ts, int count, void *data) {
-#if 0
+static int db_sync_clr_unsync(stSyncEnv_t *se, stTableSts_t *ts, int count, void *data) {
+#if 1
 	int ret = -1;
-
-	if (handle == NULL) {
-		ret = DBM_init(NULL, &handle);
-		if (ret != OSA_STATUS_OK) {
-			handle = NULL;
-			return -1;
-		}
-	}
-
 
 	uint32_t cnt = count;
 	uint32_t i = 0;
@@ -278,7 +313,7 @@ static int db_sync_clr_unsync(stTableSts_t *ts, int count, void *data) {
 		options.offset					= 0;
 		options.pEntities				= NULL;
 
-		ret = DBM_updateEntities(handle, "sync = 1", &options);
+		ret = DBM_updateEntities(se->handle, "sync = 1", &options);
 		if (ret != OSA_STATUS_OK) {
 			break;
 		}
@@ -290,12 +325,10 @@ static int db_sync_clr_unsync(stTableSts_t *ts, int count, void *data) {
 #endif
 }
 
-#if 0
-static int db_sync_wait_resp(const char *ip, int port) {
-#if 0
-	/*
+static int db_sync_wait_resp(stSyncEnv_t *se, const char *ip, int port) {
+#if 1
 	char buf[128];
-	int ret = sync_tcp_recv(fd, buf, sizeof(buf), 4, 80);
+	int ret = sync_tcp_recv(se->fd, buf, sizeof(buf), 4, 80);
 	if (ret <= 0) {
 		return -1;
 	}
@@ -315,13 +348,11 @@ static int db_sync_wait_resp(const char *ip, int port) {
 	}
 	
 	json_decref(jret);
-	*/
 
 	return 0;
 #else 
 	return 0;
 #endif
 }
-#endif
 
 

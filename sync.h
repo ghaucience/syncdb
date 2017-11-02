@@ -8,13 +8,13 @@ extern "C" {
 #endif
 
 typedef struct stCond {
-	char	*name;
+	const char	*name;
 	int		offset;
 }stCond_t;
 
 
 typedef struct stTableSts {
-	char		 *name;					/* table name */
+	const char		 *name;					/* table name */
 	int				size;					/* record size */
 	int				type;					/* EntityType */
 	int				condcnt;
@@ -24,7 +24,8 @@ typedef struct stTableSts {
 
 #define member_offset(type, field) ((size_t)&(((type *)0)->field))
 
-int db_sync(const char *ip, int port, const char *dbpath);
+int db_sync_cli(const char *ip, int port, const char *dbpath);
+int db_sync_svr(const char *ip, int port, const char *dbpath);
 
 
 

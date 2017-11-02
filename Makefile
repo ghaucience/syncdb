@@ -30,4 +30,4 @@ scp:
 
 
 run : 
-	export LD_LIBRARY_PATH=./lib/lib;./build/dbsync
+	export LD_LIBRARY_PATH=./lib/lib;./build/dbsync_cli
