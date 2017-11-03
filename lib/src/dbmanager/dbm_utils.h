@@ -19,12 +19,7 @@ extern "C" {
     {
         return NULL != pDatetime && strlen(pDatetime) > 0;
     }
-
-	/* get local time; recommended 16 characters for storing date time */
-	Char* DBM_utlGetCurrentDateTime(Char *pDateTime, const size_t bufferLength);
-
-    Char* DBM_utlGetCurrentDate(Char *pDate, const size_t bufferLength);
-	
+    	
 
 #ifdef __cplusplus
 }

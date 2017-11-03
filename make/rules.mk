@@ -15,3 +15,16 @@ $1: $2
 	#$(STRIP) $(ROOTDIR)/build/$1
 endef
 
+
+define LinkLia
+$1: $2
+  $(AR) rcs $(ROOTDIR)/build/$1 $2
+  #$(STRIP) $(ROOTDIR)/build/$1
+endef
+
+define LinkLio
+$1: $2
+	$(CXX) -shared -fPIC $2 -o $(ROOTDIR)/build/$1
+	$(STRIP) $(ROOTDIR)/build/$1
+endef
+

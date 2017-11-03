@@ -23,80 +23,81 @@ static int db_sync_req(stSyncEnv_t *se, const char *ip, int port, const char *st
 static int db_sync_wait_resp(stSyncEnv_t *se, const char *ip, int port);
 static int db_sync_clr_unsync(stSyncEnv_t *se, stTableSts_t *ts, int count, void *data);
 
+
 static stTableSts_t tss[] = {
-	{"House",						sizeof(DBM_House),					1,	1, {
-			{"uuid", 0},
+	{"House",						sizeof(DBM_House),					1,	member_offset(DBM_House, sync), 1, {
+			{"uuid", 0, 's'},
 		}
 	}, 
 
-	{"ExtHouse",				sizeof(DBM_ExtHouse),				2,	1, {
-			{"reluuid", 0},
+	{"ExtHouse",				sizeof(DBM_ExtHouse),				2,	member_offset(DBM_ExtHouse, sync),	1, {
+			{"reluuid", 0, 's'},
 		}
 	},
 
-	{"Person",					sizeof(DBM_Person),					3,	1,  {
-			{"uuid", 0},	
+	{"Person",					sizeof(DBM_Person),					3,	member_offset(DBM_Person, sync),	1,  {
+			{"uuid", 0, 's'},	
 		}
 	},
 
-	{"FlowingPerson",		sizeof(DBM_FlowingPerson),	4,	1, {
-			{"reluuid", 0},
+	{"FlowingPerson",		sizeof(DBM_FlowingPerson),	4,	member_offset(DBM_FlowingPerson, sync),	1, {
+			{"reluuid", 0, 's'},
 		}
 	},
 
-	{"Device",					sizeof(DBM_Device),					5,	1, {
-			{"uuid",	0},
+	{"Device",					sizeof(DBM_Device),					5,	member_offset(DBM_Device, sync),	1, {
+			{"uuid",	0, 's'},
 		}		
 	},
 
-	{"Card",						sizeof(DBM_Card),						6,	1,{ 
-			{"uuid",	0},
+	{"Card",						sizeof(DBM_Card),						6,	member_offset(DBM_Card, sync),	1,{ 
+			{"uuid",	0, 's'},
 		}
 	},
 
-	{"SAMCard",					sizeof(DBM_SAMCard),				7,	2, {
-			{"type_",			0},
-			{"serial_id", member_offset(DBM_SAMCard, serial_id)},
+	{"SAMCard",					sizeof(DBM_SAMCard),				7,	member_offset(DBM_SAMCard, sync),	2, {
+			{"type_",			0, 'c'},
+			{"serial_id", member_offset(DBM_SAMCard, serial_id), 's'},
 		}
 	},
 
-	{"CardPermission",	sizeof(DBM_CardPermission),	8,	2, {
-			{"crk_uuid", 0},
-			{"dev_uuid", member_offset(DBM_CardPermission, dev_uuid)},
+	{"CardPermission",	sizeof(DBM_CardPermission),	8,	member_offset(DBM_CardPermission, sync),	2, {
+			{"crk_uuid", 0, 's'},
+			{"dev_uuid", member_offset(DBM_CardPermission, dev_uuid), 's'},
 		}
 	},
 
-	{"CardOwning",			sizeof(DBM_CardOwning),			9,	2, {
-			{"person_uuid", 0},
-			{"crk_uuid", member_offset(DBM_CardOwning, crk_uuid)},
+	{"CardOwning",			sizeof(DBM_CardOwning),			9,	member_offset(DBM_CardOwning, sync),	2, {
+			{"person_uuid", 0, 's'},
+			{"crk_uuid", member_offset(DBM_CardOwning, crk_uuid), 's'},
 		}
 	},
 
-	{"UserHouse",				sizeof(DBM_UserHouse),			10,	2, {
-			{"userid", 0},
-			{"houseid", member_offset(DBM_UserHouse, houseid)},
+	{"UserHouse",				sizeof(DBM_UserHouse),			10,	member_offset(DBM_UserHouse, sync),	2, {
+			{"userid", 0, 's'},
+			{"houseid", member_offset(DBM_UserHouse, houseid), 's'},
 		}
 	},
 
-	{"AccessRecrod",		sizeof(DBM_AccessRecord),		11,	4, {
-			{"cardno", 0},
-			{"person_uuid", member_offset(DBM_AccessRecord, person_uuid)},
-			{"mac",					member_offset(DBM_AccessRecord, person_uuid)},
-			{"dev_date",		member_offset(DBM_AccessRecord, dev_date)},
+	{"AccessRecrod",		sizeof(DBM_AccessRecord),		11,	member_offset(DBM_AccessRecord, sync),	4, {
+			{"cardno", 0, 's'},
+			{"person_uuid", member_offset(DBM_AccessRecord, person_uuid), 's'},
+			{"mac",					member_offset(DBM_AccessRecord, mac), 's'},
+			{"slide_date",	member_offset(DBM_AccessRecord, slide_date), 's'},
 		}
 	},
 
-	{"DeviceAlarm",			sizeof(DBM_DeviceAlarm),		12, 4, {
-			{"uuid", 0},
-			{"mac",					member_offset(DBM_DeviceAlarm, mac)},
-			{"cardno",			member_offset(DBM_DeviceAlarm, cardno)},
-			{"cdate",				member_offset(DBM_DeviceAlarm, cdate)}
+	{"DeviceAlarm",			sizeof(DBM_DeviceAlarm),		12,	member_offset(DBM_DeviceAlarm, sync), 4, {
+			{"uuid", 0, 's'},
+			{"mac",					member_offset(DBM_DeviceAlarm, mac), 's'},
+			{"cardno",			member_offset(DBM_DeviceAlarm, cardno), 's'},
+			{"cdate",				member_offset(DBM_DeviceAlarm, cdate), 's'}
 		}
 	},
 
-	{"DeviceStatus",		sizeof(DBM_DeviceStatus),		13,	2, {
-			{"dev_uuid", 0},
-			{"cdate",		member_offset(DBM_DeviceStatus, cdate)}
+	{"DeviceStatus",		sizeof(DBM_DeviceStatus),		13,	member_offset(DBM_DeviceStatus, sync),	2, {
+			{"dev_uuid", 0, 's'},
+			{"cdate",		member_offset(DBM_DeviceStatus, cdate), 's'}
 		}
 	},
 };
@@ -117,59 +118,75 @@ int db_sync_cli(const char *ip, int port, const char *dbaddr) {
 	se.handle = NULL;
 	se.fd = -1;
 
+	/*
+	for (i = 0; i < sizeof(tss)/sizeof(tss[0]); i++) {
+		log_info("%d\n", tss[i].size);
+	}
+	*/
 	
-	for (i = 0; i <= sizeof(tss)/sizeof(tss[0]);) {
+	for (i = 0; i < sizeof(tss)/sizeof(tss[0]);) {
 		stTableSts_t *ts = &tss[i];
-		int count = 10;
 		void *data = NULL;
 
+		log_info("sync table [%s] ...\n", ts->name);
 
-		ret = db_sync_get_unsync(&se, ts, 10, &data);
+		//ret = db_sync_get_unsync(&se, ts, 5, &data);
+		ret = db_sync_get_unsync(&se, ts, 1, &data);
 		if (ret < 0) {
-			ret = -1;
+			log_err("[%s] [%d]\n", __func__, __LINE__);
+			ret = -2;
 			break;
 		} else if (ret == 0) {
 			i++;
 			continue;
 		}
-		count = ret;
+		int count = ret;
 
+		log_info("sync %d (%d)records...\n", count, ts->size);
 		
 		json_t * jsync = db_sync_base64_code(ts, data, ts->size*count);
 		if (jsync == NULL) {
 			free(data);
-			ret = -2;
+			ret = -3;
 			break;
 		}
+		log_info("%s 1", "\n");
 
 		char *ssync = json_dumps(jsync, 0);
 		if (ssync == NULL) {
 			json_decref(jsync);
 			free(data);
-			ret = -3;
+			log_err("[%s] [%d]\n", __func__, __LINE__);
+			ret = -4;
 			break;
 		}
+		log_info("%s 2", "\n");
+
+		log_debug("req : \n%s\n", ssync);
 
 		ret = db_sync_req(&se, se.ip, se.port, ssync);
 		free(ssync);
 		json_decref(jsync);
 		if (ret != 0) {
 			free(data);
-			ret = -4;
+			log_err("[%s] [%d]\n", __func__, __LINE__);
+			ret = -5;
 			break;
 		}
 
 		ret = db_sync_wait_resp(&se, se.ip, se.port);
 		if (ret != 0) {
 			free(data);
-			ret = -5;
+			log_err("[%s] [%d]\n", __func__, __LINE__);
+			ret = -6;
 			break;
 		}
 
 		ret = db_sync_clr_unsync( &se, ts, count, data);
 		free(data);
 		if (ret != count) {	
-			ret = -6;
+			log_err("[%s] [%d]\n", __func__, __LINE__);
+			ret = -7;
 			break;
 		}
 	}
@@ -193,16 +210,39 @@ int db_sync_req(stSyncEnv_t *se, const char *ip, int port, const char *str) {
 	if (se->fd < 0) {
 		se->fd = sync_tcp_create(TCP_CLIENT, ip, port);	
 		if (se->fd < 0) {
+			log_err("[%s] [%d]\n", __func__, __LINE__);
 			return -1;
 		}
 	}
 
-	int ret = sync_tcp_send(se->fd, (char *)str, strlen(str), 0, 80);
+
+	int ret = sync_tcp_send(se->fd, (char*)"\x02", 1, 0, 80);
 	if (ret <= 0) {
 		sync_tcp_destroy(se->fd);
 		se->fd = -1;
+		log_err("[%s] [%d]\n", __func__, __LINE__);
 		return -2;
 	}
+	
+
+	ret = sync_tcp_send(se->fd, (char *)str, strlen(str), 0, 80);
+	if (ret <= 0) {
+		sync_tcp_destroy(se->fd);
+		se->fd = -1;
+		log_err("[%s] [%d]\n", __func__, __LINE__);
+		return -3;
+	}
+
+	ret = sync_tcp_send(se->fd, (char*)"\x03", 1, 0, 80);
+	if (ret <= 0) {
+		sync_tcp_destroy(se->fd);
+		se->fd = -1;
+		log_err("[%s] [%d]\n", __func__, __LINE__);
+		return -4;
+	}
+
+
+
 
 	return 0;
 #else
@@ -217,13 +257,14 @@ static int db_sync_get_unsync(stSyncEnv_t *se, stTableSts_t *ts, int count, void
 		ret = DBM_init(se->dbaddr, &se->handle);
 		if (ret != OSA_STATUS_OK) {
 			se->handle = NULL;
+			log_err("[%s] [%d]\n", __func__, __LINE__);
 			return -1;
 		}
 	}
 
 	
 	uint32_t cnt = count;
-	int size = sizeof(ts->size*cnt);
+	int size = ts->size*cnt;
 	DBM_EntityOptions options;
 	options.entityType			= (DBM_EntityType)ts->type;
 	options.filter					= 0;
@@ -232,12 +273,15 @@ static int db_sync_get_unsync(stSyncEnv_t *se, stTableSts_t *ts, int count, void
 	options.offset					= 0;
 	options.pEntities				= malloc(size);
 	if (options.pEntities == NULL) {
+		log_err("[%s] [%d]\n", __func__, __LINE__);
 		return -2;
 	}
 
-	ret = DBM_getEntitiesCount(se->handle, &options);
+	//ret = DBM_getEntitiesCount(se->handle, &options);
+	ret = DBM_getEntities(se->handle, &options);
 	if (ret != OSA_STATUS_OK) {
 		free(options.pEntities);
+		log_err("[%s] [%d]\n", __func__, __LINE__);
 		return -3;
 	}
 
@@ -260,10 +304,12 @@ static json_t *db_sync_base64_code(stTableSts_t *ts, void *data, int len) {
 	int blen = Base64encode_len(len);
 	char *buf = (char *)malloc(blen+1);
 	if (buf == NULL) {
+		log_err("[%s] [%d]\n", __func__, __LINE__);
 		return NULL;
 	}
 	json_t *jret = json_object();
 	if (jret == NULL) {
+		log_err("[%s] [%d]\n", __func__, __LINE__);
 		return NULL;
 	}
 	
@@ -272,7 +318,7 @@ static json_t *db_sync_base64_code(stTableSts_t *ts, void *data, int len) {
 	json_object_set_new(jret, "tblname", json_string(ts->name));
 	json_object_set_new(jret, "records", json_string(buf));
 	json_object_set_new(jret, "cmd",		 json_string("sync"));
-	json_object_set_new(jret, "seq",		 json_integer(seq++));
+	json_object_set_new(jret, "seq",		 json_integer(++seq));
 
 	return jret;
 #else
@@ -283,6 +329,7 @@ static json_t *db_sync_base64_code(stTableSts_t *ts, void *data, int len) {
 
 static int db_sync_clr_unsync(stSyncEnv_t *se, stTableSts_t *ts, int count, void *data) {
 #if 1
+	return count;
 	int ret = -1;
 
 	uint32_t cnt = count;
@@ -305,7 +352,13 @@ static int db_sync_clr_unsync(stSyncEnv_t *se, stTableSts_t *ts, int count, void
 			if (j != 0) {
 				ax = (char *)" and ";
 			}
-			len += sprintf(where + len, "%s%s = '%s'", ax, cond->name, pi + cond->offset);
+
+			if (cond->type == 's') {
+				len += sprintf(where + len, "%s%s = '%s'", ax, cond->name, pi + cond->offset);
+			} else if (cond->type == 'c') {
+				len += sprintf(where + len, "%s%s = '%d'", ax, cond->name, *(pi + cond->offset));
+			}
+
 		}
 		options.pConditions			= where;
 
@@ -313,6 +366,7 @@ static int db_sync_clr_unsync(stSyncEnv_t *se, stTableSts_t *ts, int count, void
 		options.offset					= 0;
 		options.pEntities				= NULL;
 
+		log_info("update %s where %s\n", ts->name, where);
 		ret = DBM_updateEntities(se->handle, "sync = 1", &options);
 		if (ret != OSA_STATUS_OK) {
 			break;
@@ -330,20 +384,35 @@ static int db_sync_wait_resp(stSyncEnv_t *se, const char *ip, int port) {
 	char buf[128];
 	int ret = sync_tcp_recv(se->fd, buf, sizeof(buf), 4, 80);
 	if (ret <= 0) {
+		log_err("[%s] [%d]\n", __func__, __LINE__);
 		return -1;
 	}
 	buf[ret]  = 0;
+	log_debug("rsp:\n%s\n", buf);
+
 
   json_error_t error;
   json_t *jret = json_loads(buf, 0, &error);
   if (jret == NULL) {
+		log_err("[%s] [%d]\n", __func__, __LINE__);
 		return -2;
   }
 
+
 	int rseq = -1;  json_get_int(jret, "seq", &rseq);
 	int rret = -1;	json_get_int(jret, "ret", &rret);
+	/*
+	{
+		const char *sret = json_dumps(jret, 0);
+		if (sret != NULL) {
+			printf("sret is %s\n", sret);
+			free(sret);
+		}
+	}
+	*/
 	if (rseq != seq || rret != 0) {
 		json_decref(jret);
+		log_err("[%s] [%d], seq:%d(r:%d), ret:%d \n", __func__, __LINE__, seq, rseq, rret);
 		return -3;
 	}
 	

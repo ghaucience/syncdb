@@ -23,11 +23,12 @@ LD			?= $(CROSS)ld
 MKDIR		?= mkdir -p
 
 TARGET_CFLAGS 		+= -Wall -g -O2 -I$(ROOTDIR)/lib/src/dbmanager -I$(ROOTDIR)/lib/src/json -I$(ROOTDIR)/lib/src/osa -DOSA_MODULE_NAME='"DBM"' -I$(ROOTDIR)/lib/src/base64
-TARGET_CFLAGS 		+= $(CROSS_CFLAGS)
-TARGET_CXXFLAGS 	+= $(TARGET_CFLAGS) -std=c++0x
+TARGET_CFLAGS 		+= $(CROSS_CFLAGS) -fPIC
+TARGET_CXXFLAGS 	+= $(TARGET_CFLAGS) -std=c++0x 
 
 TARGET_LDFLAGS		+= $(CROSS_LDFLAGS)
 TARGET_LDFLAGS 		+= -L$(ROOTDIR)/lib -lm -lrt -ldl -lpthread
+#TARGET_LDFLAGS 		+= -L$(ROOTDIR)/build -ldbss -ldbsc
+TARGET_LDFLAGS 		+= -L$(ROOTDIR)/build -ldbsync
 TARGET_LDFLAGS 		+= -L$(ROOTDIR)/lib/lib -ldbmanager -lmysqlclient -losa -ljansson
-TARGET_LDFLAGS		+= -lstdc++
-
+TARGET_LDFLAGS		+= -lstdc++  

@@ -189,3 +189,51 @@ send_tag:
 }
 
 
+int		sync_tcp_accept(int fd, int _s, int _u) {
+	fd_set	fds;
+	struct timeval	tv;
+	int ret;
+	struct sockaddr_in sa;
+	socklen_t		sl = sizeof(sa);
+	int en;
+	char es[256];
+
+accept_select_tag:
+	FD_ZERO(&fds);
+	FD_SET(fd, &fds);
+	tv.tv_sec = _s;
+	tv.tv_usec = _u;
+
+	ret = select(fd + 1, &fds, NULL, NULL, &tv);
+	if (ret < 0) {
+		en = errno;
+		if (en == EAGAIN || en == EINTR) {
+			goto accept_select_tag;
+		} else {
+			strerror_r(en, es, sizeof(es));
+			debug_error("[Tcp::accept@select]:%d,%s\n", en, es);	
+			return -1;
+		}
+	} else if (ret == 0) {
+		return 0;
+	} else if (FD_ISSET(fd, &fds)) {
+accept_tag:
+		ret = accept(fd, (struct sockaddr *)&sa, &sl);
+		if (ret < 0) {
+			en = errno;
+			if (en == EAGAIN || en == EINTR) {
+				goto accept_tag;
+			} else {
+				strerror_r(en, es, sizeof(es));
+				debug_error("[Tcp::accept@accept]:%d,%s\n", en, es);	
+				return -2;
+			}
+		} else{
+			;
+		}
+	} else {
+		debug_error("[Tcp::accept@]:unknown!\n");	
+		return -3;
+	}
+	return ret;
+}

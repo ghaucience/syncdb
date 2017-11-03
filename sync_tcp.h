@@ -35,6 +35,8 @@ int		sync_tcp_recv(int fd, char *_buf, unsigned int _size, int _s, int _u);
 /* return < 0 error, else the send data len */
 int		sync_tcp_send(int fd, char *_buf, unsigned int _size, int _s, int _u);
 
+/* return < 0 error, else the client fd */
+int		sync_tcp_accept(int fd, int _s, int _u);
 #ifdef __cplusplus
 }
 #endif
