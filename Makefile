@@ -83,5 +83,5 @@ rcli :
 rsvr : 
 	#cp ./build/libdbsc.so$(VERSION) ./lib/lib/ -rf
 	#cp ./build/libdbss.so$(VERSION) ./lib/lib/ -rf
-	cp ./build/libdbsync.so$(VERSION) ./lib/lib/ -rf
+	#cp ./build/libdbsync.so$(VERSION) ./lib/lib/ -rf
 	export LD_LIBRARY_PATH=./lib/lib;./build/dbsync_svr

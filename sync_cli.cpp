@@ -146,7 +146,7 @@ int db_sync_cli(const char *ip, int port, const char *dbaddr) {
 		int count = ret;
 
 		log_info("sync %d (%d)records...\n", count, ts->size);
-		
+		DBM_printEntity((DBM_EntityType)ts->type, data);
 		json_t * jsync = db_sync_base64_code(ts, data, ts->size*count);
 		if (jsync == NULL) {
 			free(data);
@@ -306,6 +306,7 @@ static json_t *db_sync_base64_code(stTableSts_t *ts, void *data, int len) {
 
 	int blen = Base64encode_len(len);
 	char *buf = (char *)malloc(blen+1);
+	memset(buf, 1, blen+1);
 	if (buf == NULL) {
 		log_err("[%s] [%d]\n", __func__, __LINE__);
 		return NULL;
@@ -316,7 +317,9 @@ static json_t *db_sync_base64_code(stTableSts_t *ts, void *data, int len) {
 		return NULL;
 	}
 	
+
 	Base64encode(buf, (const char *)data, len);
+	buf[blen] = 0;
 
 	json_object_set_new(jret, "tblname", json_string(ts->name));
 	json_object_set_new(jret, "records", json_string(buf));

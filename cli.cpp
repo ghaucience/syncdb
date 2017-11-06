@@ -7,7 +7,8 @@
 
 
 static const char *ip		= "127.0.0.1";
-static int port					= 8000;
+//static int port					= 8000;
+static int port					= 8989;
 //static const char *path = "./test.db";
 static const char *path = "User ID = harper; Password = Hello; Server = localhost; Initial Catalog = SAC";
 
