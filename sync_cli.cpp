@@ -24,6 +24,8 @@ static int db_sync_wait_resp(stSyncEnv_t *se, const char *ip, int port);
 static int db_sync_clr_unsync(stSyncEnv_t *se, stTableSts_t *ts, int count, void *data);
 
 
+extern stTableSts_t tss[];
+#if 0
 static stTableSts_t tss[] = {
 	{"House",						sizeof(DBM_House),					1,	member_offset(DBM_House, sync), 1, {
 			{"uuid", 0, 's'},
@@ -101,6 +103,7 @@ static stTableSts_t tss[] = {
 		}
 	},
 };
+#endif
 
 int db_sync_cli(const char *ip, int port, const char *dbaddr) {
 #if 1

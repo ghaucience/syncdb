@@ -25,6 +25,8 @@ static int db_sync_resp(int fd, int ret, int seq);
 void *db_sync_listen_thread(void *arg);
 void *db_sync_recv_thread(void *arg);
 
+extern stTableSts_t tss[];
+#if 0
 static stTableSts_t tss[] = {
 	{"House",						sizeof(DBM_House),					1,	member_offset(DBM_House, sync), 1, {
 			{"uuid", 0, 's'},
@@ -102,6 +104,7 @@ static stTableSts_t tss[] = {
 		}
 	},
 };
+#endif
 
 static int init_flag = 0;
 static stSyncEnv_t se;
