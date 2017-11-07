@@ -264,6 +264,7 @@ static int db_sync_base64_decode(json_t *jdata, stTableSts_t **ts, void **data, 
 		return -3;
 	}
 	*len = blen;
+	(*data)[blen] = 0;
 	Base64decode((char *)*data, records);
 
 	return 0;
