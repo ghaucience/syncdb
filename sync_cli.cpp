@@ -279,6 +279,7 @@ static int db_sync_get_unsync(stSyncEnv_t *se, stTableSts_t *ts, int count, void
 		log_err("[%s] [%d]\n", __func__, __LINE__);
 		return -2;
 	}
+	memset(options.pEntities, 0, size);
 
 	//ret = DBM_getEntitiesCount(se->handle, &options);
 	ret = DBM_getEntities(se->handle, &options);
@@ -335,7 +336,7 @@ static json_t *db_sync_base64_code(stTableSts_t *ts, void *data, int len) {
 
 static int db_sync_clr_unsync(stSyncEnv_t *se, stTableSts_t *ts, int count, void *data) {
 #if 1
-	return count;
+	//return count;
 	int ret = -1;
 
 	uint32_t cnt = count;

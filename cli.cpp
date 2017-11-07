@@ -6,11 +6,14 @@
 #include "sync.h"
 
 
-static const char *ip		= "127.0.0.1";
+//static const char *ip		= "127.0.0.1";
+static const char *ip		= "101.132.153.33";
 //static int port					= 8000;
 static int port					= 8989;
 //static const char *path = "./test.db";
-static const char *path = "User ID = harper; Password = Hello; Server = localhost; Initial Catalog = SAC";
+//static const char *path = "User ID = harper; Password = Hello; Server = localhost; Initial Catalog = SAC";
+static const char *path = "User ID = papillon; Password = Hello; Server = localhost; Initial Catalog = SAC";
+//static const char *path = "User ID = harper; Password = Hello; Server = 101.132.153.33; Initial Catalog = SAC";
 
 
 int main(int argc, char *argv[]) {
