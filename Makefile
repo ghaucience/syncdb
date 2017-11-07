@@ -85,3 +85,19 @@ rsvr :
 	#cp ./build/libdbss.so$(VERSION) ./lib/lib/ -rf
 	#cp ./build/libdbsync.so$(VERSION) ./lib/lib/ -rf
 	export LD_LIBRARY_PATH=./lib/lib;./build/dbsync_svr
+
+install: 
+	sudo mkdir -p /usr/local/bin/sac
+	sudo cp $(ROOTDIR)/build/dbsync_cli /usr/loca/bin/sac
+	sudo cp $(ROOTDIR)/client.sh /usr/local/bin/sac/
+
+	sudo mkdir -p /usr/local/lib/sac
+	sudo cp $(ROOTDIR)/lib/lib/* /usr/local/lib/sac/ -rf
+	sudo cp $(ROOTDIR)/build/libdbsync.so$(VERSION) /usr/local/lib/sac/ 
+
+start:
+	/usr/local/bin/sac/client.sh start &
+
+stop:
+	/usr/local/bin/sac/client.sh stop &
+	
